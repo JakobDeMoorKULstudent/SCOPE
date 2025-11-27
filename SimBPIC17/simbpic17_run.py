@@ -1,0 +1,199 @@
+path = "c:\\Users\\u0166838\\OneDrive - KU Leuven\\Documents\\Doc\\Code\\SCOPE"
+
+from itertools import product
+import math
+from copy import deepcopy
+import os
+import sys
+import random
+sys.path.append(path)
+from SimBPIC17.simulation import run_simulation
+from src.utils.mini_tools import save_data, load_data
+import pandas as pd
+
+def generate_training_and_tuning_bpic17(train_size, delta, n_stages=6):
+    random_seed = 42
+
+    dataset_params = {}
+
+    dataset_params["scale_cols"] = ["duration", "monthlycost", "outcome"]
+    dataset_params["case_cols"] = ["loangoal"]
+    dataset_params["event_cols"] = ["activity", "duration", "monthlycost"]
+    dataset_params["last_state_cols"] = ["monthlycost", "loangoal"]
+    dataset_params["cat_cols"] = ["activity", "loangoal"]
+
+    dataset_params["intervention_info"] = {}
+    dataset_params["intervention_info"]["name"] = ["call_or_not"] * n_stages
+    dataset_params["intervention_info"]["data_impact"] = ["direct"] * n_stages
+    dataset_params["intervention_info"]["actions"] = [["call_incomplete_files", "wait_incomplete_files"]] * n_stages
+    dataset_params["intervention_info"]["action_width"] = [2] * n_stages
+    dataset_params["intervention_info"]["action_depth"] = [1] * n_stages
+    dataset_params["intervention_info"]["activities"] = [["call_incomplete_files", "wait_incomplete_files"]] * n_stages
+    dataset_params["intervention_info"]["column"] = ["activity"] * n_stages
+    dataset_params["intervention_info"]["start_control_activity"] = [["validate_application"]] * n_stages
+    dataset_params["intervention_info"]["end_control_activity"] = [["validate_application"]] * n_stages
+    dataset_params["intervention_info"]["retain_method"] = "precise"
+
+    # Combinations
+    dataset_params["intervention_info"]["action_combinations"] = list(product(*dataset_params["intervention_info"]["actions"]))
+    dataset_params["intervention_info"]["action_width_combinations"] = math.prod(dataset_params["intervention_info"]["action_width"])
+    dataset_params["intervention_info"]["action_depth_combinations"] = math.prod(dataset_params["intervention_info"]["action_depth"])
+
+    dataset_params["intervention_info"]["len"] = [action_width if action_width > 2 else 1 for action_width in dataset_params["intervention_info"]["action_width"]]
+    dataset_params["intervention_info"]["RCT"] = False
+    dataset_params["filename"] = "bpic17_loan_log_" +  str(dataset_params["intervention_info"]["name"])
+
+    data = run_simulation(random_seed=random_seed, n_cases=train_size, n_stages=n_stages, delta=delta)
+
+    # drop unimportant columns
+    columns_to_drop = ['avg_duration', 'length', 'prev_treatment', 'prev_treatment_effect', 'elapsed_time', 'treatment_effect', 'total_nr_treatments']
+    data = data.drop(columns=columns_to_drop)
+
+    dataset_params_list = []
+    for intervention in range(len(dataset_params["intervention_info"]["action_width"])):
+        params = deepcopy(dataset_params)
+        for key, value in params["intervention_info"].items():
+            if isinstance(value, list):
+                params["intervention_info"][key] = value[intervention]
+        dataset_params_list.append(params)
+
+    return dataset_params, dataset_params_list, data
+
+def generate_eval_bpic17(args, dataset_params):
+    eval_dfs = {}
+    random_seed = 1984
+
+    # us "action_width": is for example [2, 3], so you have 6 combinations of actions, and for each of them you need to evaluate the policy
+    action_combos = list(product(*[range(width) for width in dataset_params["intervention_info"]["action_width"]]))
+    for action_combo in action_combos:
+        if (args.already_eval_generated or ('fixed' in args.already_eval_generated_list)) and os.path.exists(os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "fixed_" + str(action_combo) + "_performance.pkl")):
+            # just load the data
+            performance = load_data(os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "fixed_" + str(action_combo) + "_performance"))
+            outcome_df = load_data(os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "fixed_" + str(action_combo) + "_outcome_df"))
+            test_df = load_data(os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "fixed_" + str(action_combo) + "_test_df"))
+            print('Fixed performance, combo: ', performance, action_combo)
+        else:
+            print("Evaluating action combo: ", action_combo)
+            performance, outcome_df, test_df = generate_one_eval_bpic17(policy="fixed", args=args, action_combo=action_combo, random_seed=random_seed)
+            eval_dfs[str(action_combo)] = {
+                "performance": performance,
+                "outcome_df": outcome_df,
+                "test_df": test_df
+            }
+
+            save_data(performance, os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "fixed_" + str(action_combo) + "_performance"))
+            save_data(outcome_df, os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "fixed_" + str(action_combo) + "_outcome_df"))
+            save_data(test_df, os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "fixed_" + str(action_combo) + "_test_df"))
+
+        eval_dfs[str(action_combo)] = {
+            "performance": performance,
+            "outcome_df": outcome_df,
+            "test_df": test_df
+        }
+
+    if (args.already_eval_generated or ('bank' in args.already_eval_generated_list)) and os.path.exists(os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "bank_performance.pkl")):
+        # Load bank policy evaluation
+        bank_performance = load_data(os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "bank_performance"))
+        bank_outcome_df = load_data(os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "bank_outcome_df"))
+        bank_test_df = load_data(os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "bank_test_df"))
+        print('Bank performance: ', bank_performance)
+    else:
+        bank_performance, bank_outcome_df, bank_test_df = generate_one_eval_bpic17(policy="bank", args=args, random_seed=random_seed)
+        eval_dfs["bank"] = {
+            "performance": bank_performance,
+            "outcome_df": bank_outcome_df,
+            "test_df": bank_test_df
+        }
+
+        save_data(bank_performance, os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "bank_performance"))
+        save_data(bank_outcome_df, os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "bank_outcome_df"))
+        save_data(bank_test_df, os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "bank_test_df"))
+
+    eval_dfs["bank"] = {
+        "performance": bank_performance,
+        "outcome_df": bank_outcome_df,
+        "test_df": bank_test_df
+    }
+
+    # Generate random policy evaluations
+    for iter in range(args.num_iterations):
+        if (args.already_eval_generated or ('random' in args.already_eval_generated_list)) and os.path.exists(os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "random_" + str(iter) + "_performance.pkl")):
+            random_performance = load_data(os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "random_" + str(iter) + "_performance"))
+            random_outcome_df = load_data(os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "random_" + str(iter) + "_outcome_df"))
+            random_test_df = load_data(os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "random_" + str(iter) + "_test_df"))
+            print('Random performance: ', random_performance)
+        else:
+            random_object_for_random_policy = random.Random(random_seed + 5*iter)
+            random_performance, random_outcome_df, random_test_df = generate_one_eval_bpic17(policy="random", args=args, random_seed=random_seed, random_object_random_policy=random_object_for_random_policy)
+
+            save_data(random_performance, os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "random_" + str(iter) + "_performance"))
+            save_data(random_outcome_df, os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "random_" + str(iter) + "_outcome_df"))
+            save_data(random_test_df, os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "random_" + str(iter) + "_test_df"))
+        
+        eval_dfs["random_" + str(iter)] = {
+                "performance": random_performance,
+                "outcome_df": random_outcome_df,
+                "test_df": random_test_df
+        }
+
+    # Generate the optimal policy:
+    if (args.already_eval_generated or ('optimal' in args.already_eval_generated_list)) and os.path.exists(os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "optimal_performance.pkl")):
+        optimal_performance = load_data(os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "optimal_performance"))
+        optimal_outcome_df = load_data(os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "optimal_outcome_df"))
+        optimal_test_df = load_data(os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "optimal_test_df"))
+        print('Optimal performance: ', optimal_performance)
+    else:
+        # for every case in the test dfs of all action combo's, grab the case that has the max outcome over the action combo's
+        for case_nr in range(args.test_size):
+            best_outcome = -float('inf')
+            best_case = None
+            for action_combo in eval_dfs.keys():
+                if action_combo == 'bank' or ('random') in action_combo: continue
+                current_case = eval_dfs[action_combo]["test_df"][eval_dfs[action_combo]["test_df"]["case_nr"] == case_nr]
+                current_outcome = current_case["outcome"].iloc[-1]
+                if current_outcome > best_outcome:
+                    best_outcome = current_outcome
+                    best_case = current_case
+            if case_nr == 0:
+                optimal_test_df = best_case
+                optimal_performance = best_outcome
+                optimal_outcome_df = pd.DataFrame([{"case_nr": case_nr, "outcome": best_outcome}])
+            else:
+                optimal_test_df = pd.concat([optimal_test_df, best_case], axis=0)
+                optimal_performance += best_outcome
+                optimal_outcome_df = pd.concat([optimal_outcome_df, pd.DataFrame([{"case_nr": case_nr, "outcome": best_outcome}])], axis=0)
+
+        eval_dfs["optimal"] = {
+            "performance": optimal_performance,
+            "outcome_df": optimal_outcome_df,
+            "test_df": optimal_test_df
+        }
+        print('Optimal performance: ', optimal_performance)
+        save_data(optimal_performance, os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "optimal_performance"))
+        save_data(optimal_outcome_df, os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "optimal_outcome_df"))
+        save_data(optimal_test_df, os.path.join(os.getcwd(), "data", args.dataset, str(args.n_stages), "eval", "optimal_test_df"))
+    
+    eval_dfs["optimal"] = {
+        "performance": optimal_performance,
+        "outcome_df": optimal_outcome_df,
+        "test_df": optimal_test_df
+    }
+
+    return eval_dfs
+
+def generate_one_eval_bpic17(policy, args, action_combo=None, random_seed=1984, random_object_random_policy=None):
+    print("Calculate True Performance for policy ", policy)
+
+    delta = 0
+    if policy == "bank":
+        delta = 1
+    elif policy == "fixed":
+        action_combo = list(action_combo)
+
+    test_df = run_simulation(random_seed=random_seed, n_cases=args.test_size, n_stages=args.n_stages, delta=delta, policy=action_combo, random_object_random_policy=random_object_random_policy)
+    # calculate performance
+    performance = test_df.groupby('case_nr')['outcome'].max().sum()
+    # make outcome_df
+    outcome_df = test_df.groupby('case_nr', as_index=False)['outcome'].max()
+
+    return performance, outcome_df, test_df

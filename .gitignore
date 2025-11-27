@@ -1,0 +1,9 @@
+.vscode/
+data/*
+res/*
+__pycache__/
+*.py[cod]
+!data/
+!res/
+!data/.gitkeep
+!res/.gitkeep
