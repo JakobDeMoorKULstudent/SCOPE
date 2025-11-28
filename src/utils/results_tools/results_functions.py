@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import numpy as np
 
-# PATH = "c:\\Users\\u0166838\\OneDrive - KU Leuven\\Documents\\Doc\\Code\\SCOPE"
-PATH = "/lustre1/scratch/372/vsc37290/SCOPE"
+# PATH = "c:\\Users\\u0166838\\OneDrive - KU Leuven\\Documents\\Doc\\Code\\DTR-Pro"
+PATH = "/lustre1/scratch/372/vsc37290/DTR-Pro"
 save_folder = "figures"
 
 color_legend = {
@@ -633,5 +633,6 @@ def plot_results_delta_levels_by_stage_grid(
 
     # fig.suptitle(r"Performance across confounding levels for different $\mathit{numbers\ of\ stages}$", fontsize=font_title)
     plt.tight_layout()
-    plt.savefig(os.path.join(save_folder,"numbers_of_decision_points.pdf"), bbox_inches="tight")
+    if "S" in methods[0] and model_specific == "xgb":
+        plt.savefig(os.path.join(save_folder,"numbers_of_decision_points.pdf"), bbox_inches="tight")
     plt.show()
