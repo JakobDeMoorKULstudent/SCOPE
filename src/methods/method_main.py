@@ -1,8 +1,3 @@
-# Make here class method
-# where you just define which class to use of the methods (e.g., DTR)
-# and then functions tune/train, which just call the functions of the class
-
-# then make those functions in the method class (so for DTR, )
 import os
 from copy import deepcopy
 from functools import reduce
@@ -15,7 +10,7 @@ from hyperopt import STATUS_OK, Trials, fmin, tpe, space_eval
 from functools import partial
 
 from config.config import space_dict, make_kmeans_q_space
-from src.methods.dtr.dtr_functions import DTRFunctions
+from src.methods.scope.scope_functions import SCOPEFunctions
 from src.methods.separate.separate_functions import SeparateFunctions
 from src.methods.kmeans_q.kmeans_q_functions import KMeansQFunctions
 from src.utils.model_tools.model_training import ModelTrainer
@@ -47,7 +42,7 @@ class Method():
         self.models_list_of_dicts = [{} for _ in range(self.args.n_stages)]
 
         if "dtr" in self.method:
-            self.method_functions = DTRFunctions(model_params_list_of_dicts=self.model_params_list_of_dicts)
+            self.method_functions = SCOPEFunctions(model_params_list_of_dicts=self.model_params_list_of_dicts)
         elif "separate" in self.method:
             self.method_functions = SeparateFunctions(model_params_list_of_dicts=self.model_params_list_of_dicts)
         elif self.method == "kmeans_q":

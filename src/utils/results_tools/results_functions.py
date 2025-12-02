@@ -616,7 +616,7 @@ def plot_results_delta_levels_by_stage_grid(
         # Axis formatting
         if c == 0:
             ax.set_ylabel(ax_y_title, fontsize=font_axes)
-        ax.set_xlabel("Number of stages", fontsize=font_axes)
+        ax.set_xlabel("Number of decision points", fontsize=font_axes)
         ax.set_title(f"δ = {delta}", fontsize=font_title)
         ax.grid(True, color='gray', linestyle='-', linewidth=0.3, alpha=0.15)
         ax.tick_params(axis='x', labelsize=font_ticks)
@@ -635,4 +635,7 @@ def plot_results_delta_levels_by_stage_grid(
     plt.tight_layout()
     if "S" in methods[0] and model_specific == "xgb":
         plt.savefig(os.path.join(save_folder,"numbers_of_decision_points.pdf"), bbox_inches="tight")
+    else:
+        learner = methods[0].split('-')[1]
+        plt.savefig(os.path.join(save_folder,("numbers_of_decision_points" + "_" + learner + "_" + model_specific + ".pdf")), bbox_inches="tight")
     plt.show()

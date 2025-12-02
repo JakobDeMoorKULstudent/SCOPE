@@ -7,7 +7,7 @@ from src.utils.mini_tools import get_model_functions
 class SeparateFunctions():
     def __init__(self, model_params_list_of_dicts):
         """
-        Initialize the DTR calculations.
+        Initialize the SEP calculations.
         """
         # Initialization only
         self.n_stages = len(model_params_list_of_dicts)
@@ -55,7 +55,7 @@ class SeparateFunctions():
 
         return data_train_adj, data_infer_adj, weights_train, weights_infer, self.data_train_ps, self.data_infer_ps
 
-    # DTR Calculations
+    # SEP Calculations
     def calc_target_effect(self, infer=False):
         data = self.data_infer_list[self.stage] if infer else self.data_train_list[self.stage]
 
@@ -101,7 +101,7 @@ class SeparateFunctions():
 
     def calc_opt_actions_and_constrast(self, data, q_values_all_actions, propensity_scores, target_outcomes):
         """
-        Estimate the optimal actions for the DTR method. 
+        Estimate the optimal actions for the SEP method. 
         NOTE: After training, using data_infer.
         """
         causal_estimates = []
@@ -124,10 +124,10 @@ class SeparateFunctions():
 
         return opt_actions, opt_estimates, contrast_function_values, causal_estimates_tensor
         
-    # Helper methods for DTR calculations
+    # Helper methods for SEP calculations
     def get_q_values(self, outcome_model_functions, data, target_outcomes=None):
         """
-        Get the Q predictions for all possible actions in the DTR method.
+        Get the Q predictions for all possible actions in the SEP method.
         """
 
         q_values_all_actions = outcome_model_functions.forward(x_case=data["X_case"],

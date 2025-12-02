@@ -4,7 +4,7 @@ from src.utils.model_tools.model_functions import KMeansClustering
 class KMeansQFunctions():
     def __init__(self, model_params_list_of_dicts):
         """
-        Initialize the DTR calculations.
+        Initialize the KMeans_Q calculations.
         """
         # Initialization only
         self.n_stages = len(model_params_list_of_dicts)

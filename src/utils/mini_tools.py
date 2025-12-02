@@ -228,12 +228,12 @@ def parse():
             with open(args.config, 'r') as f:
                 config_args = json.load(f)
 
-    parser.add_argument('--methods', nargs='+', type=str, default=config_args.get('methods', ["dtr-reg-M", "dtr-AIPWE-M", "dtr-AIPWE-R", "s_learners", "kmeans_q", "knn"]), help='Methods to run')
+    parser.add_argument('--methods', nargs='+', type=str, default=config_args.get('methods', ["dtr-S-reg-R", "separate-S-reg-none", "kmeans_q"]), help='Methods to run')
     parser.add_argument('--dataset', type=str, default=config_args.get('dataset', "SimBank"), help='Dataset to use')
     parser.add_argument('--n_stages', type=int, default=config_args.get('n_stages', 2), help='Number of stages')
     parser.add_argument('--encodings', nargs='+', type=str, default=config_args.get('encodings', ["tensor", "kmeans"]), help='Encodings to use')
-    parser.add_argument('--model_categories', nargs='+', type=str, default=config_args.get('model_categories', ["dl","ml","dl", "ml"]), help='Model categories to use for DTR/S-learners (propensity, outcome, effect)')
-    parser.add_argument('--model_specifics', nargs='+', type=str, default=config_args.get('model_specifics', ["xgb","xgb","xgb"]), help='Models to use for DTR/S-learners (propensity, outcome, effect)')
+    parser.add_argument('--model_categories', nargs='+', type=str, default=config_args.get('model_categories', ["ml","ml","ml", "ml"]), help='Model categories to use (outcome, effect): ml, dl, or rl')
+    parser.add_argument('--model_specifics', nargs='+', type=str, default=config_args.get('model_specifics', ["xgb","xgb","xgb"]), help='Models to use (outcome, effect): xgb, rf, lstm...')
     parser.add_argument('--cross_fitting', type=lambda x: x.lower() == 'true', default=config_args.get('cross_fitting', False), help='Cross-fitting (True or False)')
     parser.add_argument('--wandb', type=lambda x: x.lower() == 'true', default=config_args.get('wandb', False), help='Connect with wandb or not')
     parser.add_argument('--kmeans_config', nargs='+', type=str, default=config_args.get('kmeans_config', ["big", "neg_rewards", "prep_outcome", "norm", "norm_mdp", "change_zero"]), help='max_scale (small, mid, big), pos_rewards(bool), prep_outcome(bool), norm(yes/no), norm_mdp(bool), change_zero(bool)')
@@ -244,9 +244,9 @@ def parse():
     parser.add_argument('--big_eval', type=lambda x: x.lower() == 'true', default=config_args.get('big_eval', True), help='Big eval (True or False)')
     parser.add_argument('--big_tuning', type=lambda x: x.lower() == 'true', default=config_args.get('big_tuning', True), help='Big tuning (True or False)')
 
-    parser.add_argument('--already_trained_list', nargs='+', type=str, default=config_args.get('already_trained_list', []), help='Already trained? (ps, outcome, class, and specify stage, so e.g., ps_0, outcome_0, class_0)')
+    parser.add_argument('--already_trained_list', nargs='+', type=str, default=config_args.get('already_trained_list', []), help='Are there any models already trained?')
     parser.add_argument('--already_trained', type=lambda x: x.lower() == 'true', default=config_args.get('already_trained', False), help='Already trained (True or False)')
-    parser.add_argument('--already_tuned_list', nargs='+', type=str, default=config_args.get('already_tuned_list', []), help='Already tuned? (ps, outcome, class) and specify stage, so e.g., ps_0, outcome_0, class_0')
+    parser.add_argument('--already_tuned_list', nargs='+', type=str, default=config_args.get('already_tuned_list', []), help='Are there any models already tuned?')
     parser.add_argument('--already_tuned', type=lambda x: x.lower() == 'true', default=config_args.get('already_tuned', False), help='Already tuned (True or False)')
     parser.add_argument('--already_train_tune_generated', type=lambda x: x.lower() == 'true', default=config_args.get('already_train_tune_generated', False), help='Already generated train and tune dfs (True or False)')
     parser.add_argument('--already_train_tune_preprocessed', type=lambda x: x.lower() == 'true', default=config_args.get('already_train_tune_preprocessed', False), help='Already preprocessed train and tune dfs (True or False)')
@@ -254,11 +254,11 @@ def parse():
     parser.add_argument('--already_eval_generated', type=lambda x: x.lower() == 'true', default=config_args.get('already_eval_generated', False), help='Already generated eval dfs (True or False)')
     parser.add_argument('--already_eval_generated_list', nargs='+', type=str, default=config_args.get('already_eval_generated_list', []), help='Already evaluation generated?')
     parser.add_argument('--already_eval_preprocessed', type=lambda x: x.lower() == 'true', default=config_args.get('already_eval_preprocessed', False), help='Already preprocessed eval dfs (True or False)')
-    parser.add_argument('--already_evaluated_list', nargs='+', type=str, default=config_args.get('already_evaluated_list', []), help='Already evaluated? (give the full method, e.g., dtr-reg, dtr-AIPWE-M, etc.)')
+    parser.add_argument('--already_evaluated_list', nargs='+', type=str, default=config_args.get('already_evaluated_list', []), help='Already evaluated? (give the full method, e.g., dtr-S-reg-R etc.)')
     parser.add_argument('--already_evaluated', type=lambda x: x.lower() == 'true', default=config_args.get('already_evaluated', False), help='Already evaluated (True or False)')
 
     parser.add_argument('--iterations_to_skip', nargs='+', type=int, default=config_args.get('iterations_to_skip', []), help='Iterations to skip')
-    parser.add_argument('--num_iterations', type=int, default=config_args.get('num_iterations', 5), help='Num iterations')
+    parser.add_argument('--num_iterations', type=int, default=config_args.get('num_iterations', 10), help='Num iterations')
     parser.add_argument('--delta', type=float, default=config_args.get('delta', 0.95), help='Delta')
 
     args = parser.parse_args()

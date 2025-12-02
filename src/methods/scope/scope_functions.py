@@ -6,10 +6,10 @@ from sklearn.metrics import log_loss, accuracy_score, f1_score
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 
-class DTRFunctions():
+class SCOPEFunctions():
     def __init__(self, model_params_list_of_dicts):
         """
-        Initialize the DTR calculations.
+        Initialize the SCOPE calculations.
         """
         # Initialization only
         self.n_stages = len(model_params_list_of_dicts)
@@ -63,7 +63,6 @@ class DTRFunctions():
 
         return data_train_adj, data_infer_adj, weights_train, weights_infer, self.data_train_ps, self.data_infer_ps
 
-    # DTR Calculations
     def calc_target_effect(self, infer=False):
         data = self.data_infer_list[self.stage] if infer else self.data_train_list[self.stage]
         dataset_ps = (self.data_lists_for_other_models["ps"]["infer"][self.stage] if self.data_lists_for_other_models["ps"]["infer"] is not None else None) if infer else (self.data_lists_for_other_models["ps"]["train"][self.stage] if self.data_lists_for_other_models["ps"]["train"] is not None else None)
@@ -114,7 +113,7 @@ class DTRFunctions():
 
     def calc_target_outcomes(self, infer=False):
         """
-        Set the target variable for the outcome model in the DTR method.
+        Set the target variable for the outcome model in SCOPE.
         At stage <n_stages - 1>, this is the real Y, at stage <n_stages - 2>..., this setup using the M- (max) or R-method (regret).
         NOTE: Before training, using data_train.
         """
@@ -194,7 +193,7 @@ class DTRFunctions():
     
     def calc_opt_actions_and_constrast(self, data, q_values_all_actions, propensity_scores, target_outcomes):
         """
-        Estimate the optimal actions for the DTR method. 
+        Estimate the optimal actions for SCOPE.
         NOTE: After training, using data_infer.
         """
         causal_estimates = []
@@ -217,10 +216,10 @@ class DTRFunctions():
 
         return opt_actions, opt_estimates, contrast_function_values, causal_estimates_tensor
         
-    # Helper methods for DTR calculations
+    # Helper methods for SCOPE
     def get_q_values(self, model_functions, data, target_outcomes=None, target="outcome"):
         """
-        Get the Q predictions for all possible actions in the DTR method.
+        Get the Q predictions for all possible actions in SCOPE.
         """
 
         q_values_all_actions = model_functions.forward(x_case=data["X_case"],
@@ -239,7 +238,7 @@ class DTRFunctions():
         
     def get_propensity_scores(self, ps_model_functions, data, dataset_ps=None):
         """
-        Get the propensity scores for the DTR method.
+        Get the propensity scores for SCOPE (if used).
         """
         # NOTE: we use the calibration model to get the propensity scores if it exists, otherwise we use the propensity score model (which would be LogReg).
         propensity_scores = ps_model_functions.forward(x_case=data["X_case"],

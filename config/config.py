@@ -123,7 +123,7 @@ model_dict = {
 
 model_params = {
     # Meta-parameters
-    "method": "dtr-AIPWE-R",
+    "method": "dtr-S-reg-R",
     "dataset": "SimBank",
     "pos_rewards": False,
     "encoding": "agg",
