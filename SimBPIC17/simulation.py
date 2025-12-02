@@ -101,7 +101,7 @@ def run_simulation(random_seed=42, n_cases=1000, n_stages=3, delta=0.99, policy=
             rows_to_add.append(new_row)
         
             if stage == n_stages - 1:
-                # Add validate application to each prefix
+                # Add validate application 
                 validate_new_row = deepcopy(standard_row)
                 validate_new_row["event_nr"] = last_row["event_nr"] + 2
                 validate_new_row["case_nr"] = last_row["case_nr"]

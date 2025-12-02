@@ -4,32 +4,32 @@ This repository provides the code for the paper *"SCOPE: Sequential Causal Optim
 ## Overview
 1) Results: resulting figures of the experiments shown in the paper and of additional experiments.
 2) Code: a short explanation of the purpose of each file in the repository.
-1) SimBPIC17: the process model of the novel SimBPIC17 semi-synthetic benchmark for sequential PresPM.
+1) SimBPIC17: the process model (DFG) of the novel SimBPIC17 semi-synthetic benchmark for sequential PresPM.
 
-# Results
+# 1. Results
 Below are the main results of the paper, and additional results. For each experiment we used 10 different random seeds.
 
 ## Main
 ### SimBank
-Varying training size (SCOPE & SEP: S-learner, XGBoost)
+#### Varying training size (SCOPE & SEP: S-learner, XGBoost)
 ![Varying training size (SCOPE & SEP: S-learner, XGBoost)](src/utils/results_tools/figures/training_sizes-1.png)
-Varying learner types (10K; SCOPE & SEP: XGBoost)
+#### Varying learner types (10K; SCOPE & SEP: XGBoost)
 ![Varying learner types (10K; SCOPE & SEP: XGBoost)](src/utils/results_tools/figures/learners-1.png)
-Varying base model types (10K; SCOPE & SEP: S-learner)
+#### Varying base model types (10K; SCOPE & SEP: S-learner)
 ![Varying base model types (10K; SCOPE & SEP: S-learner)](src/utils/results_tools/figures/base_models-1.png)
 ### SimBPIC17
-Varying numbers of decision points (10K; SCOPE & SEP: S-learner, XGBoost)
+#### Varying numbers of decision points (10K; SCOPE & SEP: S-learner, XGBoost)
 ![Varying numbers of decision points (10K; SCOPE & SEP: S-learner, XGBoost)](src/utils/results_tools/figures/numbers_of_decision_points-1.png)
 
 ## Additional experiment SimBPIC17
 ### SimBPIC17
-Varying numbers of decision points for T-learner (10K; SCOPE & SEP: XGBoost)
+#### Varying numbers of decision points for T-learner (10K; SCOPE & SEP: XGBoost)
 ![Varying numbers of decision points for T-learner (10K; SCOPE & SEP: XGBoost)](src/utils/results_tools/figures/numbers_of_decision_points_T_xgb-1.png)
-Varying numbers of decision points for Random Forest (10K; SCOPE & SEP: S-learner)
+#### Varying numbers of decision points for Random Forest (10K; SCOPE & SEP: S-learner)
 ![Varying numbers of decision points for Random Forest (10K; SCOPE & SEP: S-learner)](src/utils/results_tools/figures/numbers_of_decision_points_S_rf-1.png)
 These additional experiments on SimBPIC17 confirm the paper's finding that SCOPE performs better regardless of the learner or base model used, mirroring the results previously shown on SimBank.
 
-# Code
+# 2. Code
 The structure of the code is as follows:
 ```
 SCOPE/
@@ -83,6 +83,9 @@ python scripts/main.py \
 
 Download the results of the experiments from ... 
 
-# SimBPIC17
+# 3. SimBPIC17
 
-Below, the predefined process model of SimBPIC17 is shown, with indicators at the decision points. The whole data-generating process is given in the folder SimBPIC17 (including generating variables, the historical decision policy of the bank, the causal effect and outcome calculations). The general purpose of each file in this folder is described above.
+Below, the predefined process model (DFG) of SimBPIC17 is shown, with indicators at the decision points. The whole data-generating process is given in the folder SimBPIC17 (including generating variables, the historical decision policy of the bank, the causal effect and outcome calculations). The general purpose of each file in this folder is described above.
+
+## DFG of SimBPIC17
+![DFG of SimBPIC17](SimBPIC17/DFG.png)
