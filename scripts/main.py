@@ -1,4 +1,7 @@
 import os
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
 import sys
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(parent_dir)
@@ -21,7 +24,11 @@ if not args.big_data:
 
 folder_to_add = ""
 if args.dataset == "bpic17":
-    folder_to_add = os.path.join("bpic17", str(args.n_stages))
+    conf_suffix = "_case" if args.confounding_type == "case" else ""
+    folder_to_add = os.path.join("bpic17" + conf_suffix, str(args.n_stages))
+else:
+    conf_suffix = ""
+args.conf_suffix = conf_suffix
 
 PATH_BEGIN = str(args.train_size) + "_" + str(int(100*args.delta)) + "_"
 DATA_FOLDER = os.path.join("data", folder_to_add, str(args.train_size), str(int(100 * args.delta)))
@@ -45,7 +52,7 @@ if args.already_train_tune_generated:
     
 else:
     if args.dataset == "bpic17":
-        dataset_params, dataset_params_list, data = generate_training_and_tuning_bpic17(train_size=args.train_size, delta=args.delta, n_stages=args.n_stages)
+        dataset_params, dataset_params_list, data = generate_training_and_tuning_bpic17(train_size=args.train_size, delta=args.delta, n_stages=args.n_stages, confounding_type=args.confounding_type)
     else:
         dataset_params, dataset_params_list, data = generate_training_and_tuning(size=args.train_size, delta=args.delta)
     save_data(dataset_params, os.path.join(os.getcwd(), DATA_FOLDER, "training_and_tuning", PATH_BEGIN + "dataset_params"))

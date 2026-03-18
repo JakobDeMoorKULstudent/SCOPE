@@ -260,6 +260,7 @@ def parse():
     parser.add_argument('--iterations_to_skip', nargs='+', type=int, default=config_args.get('iterations_to_skip', []), help='Iterations to skip')
     parser.add_argument('--num_iterations', type=int, default=config_args.get('num_iterations', 10), help='Num iterations')
     parser.add_argument('--delta', type=float, default=config_args.get('delta', 0.95), help='Delta')
+    parser.add_argument('--confounding_type', type=str, default=config_args.get('confounding_type', 'point'), help='Confounding type for bpic17: "point" (inline per-decision-point random) or "case" (generate full bank-policy + full RCT datasets, then combine via set_delta)')
 
     args = parser.parse_args()
 

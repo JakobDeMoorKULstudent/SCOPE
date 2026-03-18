@@ -1,3 +1,4 @@
+import random
 import torch
 import numpy as np
 from src.utils.data_load_tools import DL_Dataset, ML_Dataset, RL_Dataset
@@ -14,6 +15,7 @@ class ModelEval():
         # Initialize the model functions based on the target and model specific parameters
         self.model_functions = get_model_functions(model_params=self.model_params, model_to_load=model_to_load)
 
+        random.seed(self.model_params["seed"])
         torch.manual_seed(self.model_params["seed"])
         torch.cuda.manual_seed_all(self.model_params["seed"])
         np.random.seed(self.model_params["seed"])

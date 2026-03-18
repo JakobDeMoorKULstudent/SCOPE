@@ -1,3 +1,4 @@
+import random
 import torch
 from torch.utils import data
 from itertools import chain
@@ -28,6 +29,7 @@ class ModelTrainer():
         # Initialize the model functions based on the target and model specific parameters
         self.model_functions = get_model_functions(model_params=self.model_params)
 
+        random.seed(self.model_params["seed"])
         torch.manual_seed(self.model_params["seed"])
         torch.cuda.manual_seed_all(self.model_params["seed"])
         np.random.seed(self.model_params["seed"])

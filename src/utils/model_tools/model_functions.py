@@ -1,4 +1,6 @@
 # Initialize the models here + train/validate them
+import os
+import time
 from torch import nn
 import torch
 import numpy as np
@@ -18,12 +20,13 @@ import itertools
 from config.config import dataset_configs
 
 def set_seed(seed):
-  torch.manual_seed(seed)
-  torch.cuda.manual_seed_all(seed)
-  np.random.seed(seed)
-  torch.backends.cudnn.deterministic = True
-  torch.backends.cudnn.benchmark = False
-  torch.backends.cudnn.enabled = False
+    random.seed(seed)          # <-- add this
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.enabled = False
 
 def get_ml_model(model_params, n_classes, target_type,):
     if model_params["model_specific"] == "xgb":
@@ -276,6 +279,7 @@ class MLCausalRegressor():
     def forward(self, x_case, x_event, t, prefix_len, y, ret_counterfactuals=False):
         X, _, _ = self.prep(x_case, t, y)
 
+        runtime_forward_start = time.perf_counter()
         preds = np.zeros((self.n_classes, X.shape[0])) 
         for treatment in range(self.n_classes):
             if self.single_model and self.target == "outcome":
@@ -289,6 +293,10 @@ class MLCausalRegressor():
                 preds[treatment, :] = self.model.predict(feat)
             else:
                 preds[treatment, :] = self.model[treatment].predict(X)
+        runtime_forward_seconds = time.perf_counter() - runtime_forward_start
+        # print('Method:', self.model_params["method"])
+        # print(f"Forward pass runtime: {runtime_forward_seconds:.2f} seconds")
+        # print('Nr of trees in model:', self.model[0].n_estimators if not self.single_model else self.model.n_estimators)
         return preds
 
     def score(self, model, X, T, Y):
@@ -366,19 +374,31 @@ class KMeans_QLearning():
         self.q_table_final = None
 
     def fit_and_get_loss(self, x_case, x_event, t, prefix_len, y, weights=None, tuning=False):
+        set_seed(self.model_params["seed"])
         nr_episodes_train = int(self.model_params["train_size"] * 0.8) if tuning else self.model_params["train_size"]
         nr_episodes_eval = int(self.model_params["train_size"] * 0.2) if tuning else 0
 
+        # Start runtime measurement
+        runtime_cluster_start = time.perf_counter()
         self.kmeans_clustering, silhouette = self.cluster_data(x_case)
+        # end runtime measurement
+        runtime_cluster_seconds = time.perf_counter() - runtime_cluster_start
+        # print(f"Clustering runtime: {runtime_cluster_seconds:.2f} seconds")
         
+        runtime_construct_start = time.perf_counter()
         # construct the MDP
         mdp_df = self.construct_mdp(data=x_case)
         # add columns to df: q-value, scale_factor, and normalize_reward
         mdp_df = self.add_q_scaling(mdp_df)
         #Q-matrix and co.
         states_list, state_action_dict, q_table = self.generate_q_table(mdp_df)
+        runtime_construct_seconds = time.perf_counter() - runtime_construct_start
+        # print(f"MDP construction runtime: {runtime_construct_seconds:.2f} seconds")
 
+        runtime_q_learning_start = time.perf_counter()
         self.q_table_final, avg_reward_train = self.training_loop(states_list=states_list, state_action_dict=state_action_dict, q_table=q_table, nr_episodes=nr_episodes_train, eval=False)
+        runtime_q_learning_seconds = time.perf_counter() - runtime_q_learning_start
+        # print(f"Q-learning training runtime: {runtime_q_learning_seconds:.2f} seconds")
         if tuning:
             _, avg_reward_eval = self.training_loop(states_list=states_list, state_action_dict=state_action_dict, q_table=self.q_table_final, nr_episodes=nr_episodes_eval, eval=True)
 
@@ -454,7 +474,7 @@ class KMeans_QLearning():
             data = data.drop(columns=['scaled_reward'])
                 
         # make a new df with the unique combinations of s, a, s'
-        mdp_df = data[["s", "a", "s'"]].drop_duplicates()
+        mdp_df = data[["s", "a", "s'"]].drop_duplicates().sort_values(["s", "a", "s'"]).reset_index(drop=True)
 
         # calculate the number of occurrences of each combination of s, a, s', and calculate the average reward for each combination
         counts_s_a_s = data[["s", "a", "s'"]].value_counts().reset_index(name='number_occurrences')
@@ -486,7 +506,8 @@ class KMeans_QLearning():
         
         mdp_df['q'] = 0
         # compute total number of occurrences per action
-        mdp_df = mdp_df.groupby(['s', "a"]).apply(self.total_occurrences, 'sum_n_occurrences')
+        mdp_df = mdp_df.groupby(['s', "a"]).apply(self.total_occurrences, 'sum_n_occurrences').reset_index(drop=True)
+        mdp_df = mdp_df.sort_values(["s", "a", "s'"]).reset_index(drop=True)
 
         # define scale factor
         if scale_factor_type == "none":

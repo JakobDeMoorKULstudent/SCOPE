@@ -1,4 +1,5 @@
 import os
+import time
 from copy import deepcopy
 from functools import reduce
 from typing import Dict, Any, List, Tuple
@@ -25,7 +26,8 @@ class Method():
     def __init__(self, args, method, prepped_data_dict, best_model_params_list_of_dicts=None, iter=0):
         to_add = ''
         if args.dataset == 'bpic17':
-            to_add = os.path.join("bpic17", str(args.n_stages))
+            conf_suffix = "_case" if args.confounding_type == "case" else ""
+            to_add = os.path.join("bpic17" + conf_suffix, str(args.n_stages))
         self.RESULTS_FOLDER = os.path.join("res", to_add, str(args.train_size), str(int(100 * args.delta)))
         self.PATH_BEGIN = str(args.train_size) + "_" + str(int(100*args.delta)) + "_"
 
@@ -50,6 +52,8 @@ class Method():
         
     def run(self, tuning=False):
         # NOTE: here we start to go over the stages in reverse order for the backward induction
+        # Runtime of the full method execution (all stages/targets in this run call)
+        runtime_start = time.perf_counter()
         for stage in range(len(self.model_params_list_of_dicts) - 1, -1, -1):
             self.stage = stage
             model_params_dict = self.model_params_list_of_dicts[stage]
@@ -148,6 +152,22 @@ class Method():
                 save_data(self.model_params_list_of_dicts[self.stage][target], os.path.join(os.getcwd(), self.RESULTS_FOLDER, str(self.method), to_add_folder, self.PATH_BEGIN + self.method + "_" + target + "_" + self.model_params["model_specific"] + "_" + str(stage) + "_" + to_add_cross_fitting + to_add_path  + "_params"))
                 print('\n')
 
+        runtime_seconds = time.perf_counter() - runtime_start
+        to_add_folder = "tuning" if tuning else "training"
+        to_add_path = "tuning" if tuning else (str(self.iter) + "_training")
+        to_add_cross_fitting = "cross_fitted_" if "dtr" in self.method and self.args.cross_fitting else ""
+        runtime_path = os.path.join(
+            os.getcwd(),
+            self.RESULTS_FOLDER,
+            str(self.method),
+            to_add_folder,
+            self.PATH_BEGIN + self.method + "_" + to_add_cross_fitting + to_add_path + "_runtime",
+        )
+        # only save if no already_trained_list, no already_tuned_list, not already_trained, not already_tuned
+        if not ((self.args.already_trained_list and not tuning) or (self.args.already_tuned_list and tuning) or (self.args.already_trained and not tuning) or (self.args.already_tuned and tuning)):
+            save_data(runtime_seconds, runtime_path)
+            print(f"    Runtime ({self.method}, {to_add_path}): {runtime_seconds:.2f}s")
+
     def _objective(self, params):
         # Ensure alpha_max > alpha_min
         if self.model_params["method"] == "kmeans_q":
@@ -193,12 +213,27 @@ class Method():
             # IMPORTANT NOTE: for q-learning, we train using 1 stage (0), but for evaluation we need to go through all stages, since the action in stage 0 decides the action in stage 1
             # So whenever we select something of a model, we select it by index_to_select, which is not the same as the stage when the method is "kmeans_q" (which only has one stage for training, so we always select 0)
             action_df = None
+            total_eval_runtime_seconds = 0
             for stage in range(self.args.n_stages):
                 index_to_select = stage if self.method != "kmeans_q" else 0  # KMeansQ only has one stage for training, so we always have 0 to select the model
                 model_params = self.model_params_list_of_dicts[index_to_select][final_target].copy() 
                 collated_prep = self.get_data_given_prev_actions(stage=stage, preps_maps=preps_maps, model_params=model_params, target=final_target, index_to_select=index_to_select, prev_decisions=decisions)
-                action_df = self.get_actions_recommended_current_stage(stage=stage, target=final_target, index_to_select=index_to_select, model_params=model_params, collated_prep=collated_prep, case_nrs=case_nrs, to_add_cross_fitting=to_add_cross_fitting)
+                action_df, action_eval_seconds = self.get_actions_recommended_current_stage(stage=stage, target=final_target, index_to_select=index_to_select, model_params=model_params, collated_prep=collated_prep, case_nrs=case_nrs, to_add_cross_fitting=to_add_cross_fitting)
+                total_eval_runtime_seconds += action_eval_seconds
                 decisions[stage] = action_df
+
+            # SAVE RUNTIME
+            save_data(
+                total_eval_runtime_seconds,
+                os.path.join(
+                    os.getcwd(),
+                    self.RESULTS_FOLDER,
+                    str(self.method),
+                    "eval",
+                    self.PATH_BEGIN + self.method + "_" + final_target + "_" + final_model_category + "_" + to_add_model_specific + str(self.iter) + "_" + to_add_cross_fitting + "runtime_eval",
+                ),
+            )
+            print(f"                Eval runtime ({self.method}, iter {self.iter}): {total_eval_runtime_seconds:.2f}s")
 
             profit, final_df = self.calculate_proft_of_decisions(decisions=decisions, dfs_map=dfs_map)
             # calculate the extra percentage profit compared to the bank
@@ -257,7 +292,9 @@ class Method():
 
         model_evaluator = ModelEval(data=collated_prep, model_params=model_params, model_to_load=model_to_load, stage=stage)
 
+        action_eval_start = time.perf_counter()
         action_df = model_evaluator.eval()
+        action_eval_seconds = time.perf_counter() - action_eval_start
 
         # === Ensure all case_nrs have a decision ===
         action_map = dict(zip(action_df["case_nr"], action_df["action"]))
@@ -265,7 +302,7 @@ class Method():
         full_action_list = [action_map.get(case_nr, 0) for case_nr in case_nrs]
         action_df = pd.DataFrame({"case_nr": case_nrs, "action": full_action_list})
 
-        return action_df
+        return action_df, action_eval_seconds
     
     def row_to_tuple(self, row, action_cols):
         return tuple(row[c] for c in action_cols)

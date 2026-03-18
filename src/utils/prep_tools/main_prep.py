@@ -8,7 +8,8 @@ class ProcessPreprocessor():
     def __init__(self, args, raw_data, DATASET_PARAMS_LIST):
         to_add = ''
         if args.dataset == 'bpic17':
-            to_add = os.path.join("bpic17", str(args.n_stages))
+            conf_suffix = "_case" if args.confounding_type == "case" else ""
+            to_add = os.path.join("bpic17" + conf_suffix, str(args.n_stages))
         self.DATA_FOLDER = os.path.join("data", to_add, str(args.train_size), str(int(100 * args.delta)))
         self.PATH_BEGIN = str(args.train_size) + "_" + str(int(100*args.delta)) + "_"
 

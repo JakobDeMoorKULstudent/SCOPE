@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import numpy as np
 
-# PATH = "c:\\Users\\u0166838\\OneDrive - KU Leuven\\Documents\\Doc\\Code\\DTR-Pro"
-PATH = "/lustre1/scratch/372/vsc37290/DTR-Pro"
+PATH = "c:\\Users\\u0166838\\OneDrive - KU Leuven\\Documents\\Doc\\Code\\SCOPE"
+# PATH = "/lustre1/scratch/372/vsc37290/SCOPE"
 save_folder = "figures"
 
 color_legend = {
@@ -61,10 +61,11 @@ font_legend=13
 ax_x_title = r"$\delta$"
 ax_y_title = "Gain over bank policy (%)"
 
-def load_results(training_sizes, delta_levels, methods, model_category, cross_fit, num_iterations=5, model_specific="xgb", n_stages=2, dataset="SimBank"):
+def load_results(training_sizes, delta_levels, methods, model_category, cross_fit, num_iterations=5, model_specific="xgb", n_stages=2, dataset="SimBank", confounding_type="point"):
     folder_to_add = ""
     if dataset == "bpic17":
-        folder_to_add = os.path.join("bpic17", str(n_stages))
+        conf_suffix = "_case" if confounding_type == "case" else ""
+        folder_to_add = os.path.join("bpic17" + conf_suffix, str(n_stages))
     
     results_dict = {}
     avg_uplift_dict = {}
@@ -625,7 +626,7 @@ def plot_results_delta_levels_by_stage_grid(
 
         # Only add legend to top right subplot
         if idx == len(delta_levels) - 1:
-            ax.legend(fontsize=font_legend, loc='lower left')
+            ax.legend(fontsize=font_legend, loc='lower right')
 
     # Hide any unused subplots if delta_levels doesn't fill the grid
     for j in range(num_deltas, rows * cols):
