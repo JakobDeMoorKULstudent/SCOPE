@@ -31,6 +31,9 @@ These additional experiments on SimBPIC17 confirm the paper's finding that SCOPE
 ## Computational complexity
 We discuss the theoretical computational complexity and the practical runtimes of each method in our [Computational Complexity Overview (PDF)](src/utils/results_tools/docs/SCOPE__Computational_Complexity.pdf).
 
+## SCOPE algorithms for each learner
+We discuss how SCOPE's algorithm functions for each learner in our [PDF 'SCOPE: Algorithms for each learner'](src/utils/results_tools/docs/SCOPE__algorithms.pdf).
+
 # 2. Code
 The structure of the code is as follows:
 ```
