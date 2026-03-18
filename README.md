@@ -29,7 +29,7 @@ Below are the main results of the paper, and additional results. For each experi
 These additional experiments on SimBPIC17 confirm the paper's finding that SCOPE performs better regardless of the learner or base model used, mirroring the results previously shown on SimBank.
 
 ## Computational complexity
-We discuss the theoretical computational complexity and the practical runtimes of each method in our [Computational Complexity Report (PDF)](src/utils/results_tools/docs/SCOPE__Computational_Complexity.pdf).
+We discuss the theoretical computational complexity and the practical runtimes of each method in our [Computational Complexity Overview (PDF)](src/utils/results_tools/docs/SCOPE__Computational_Complexity.pdf).
 
 # 2. Code
 The structure of the code is as follows:
