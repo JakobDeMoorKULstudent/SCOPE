@@ -30,11 +30,6 @@ These additional experiments on SimBPIC17 confirm the paper's finding that SCOPE
 
 ## Computational complexity
 We discuss the theoretical computational complexity and the practical runtimes of each method in our [Computational Complexity Report (PDF)](src/utils/results_tools/docs/SCOPE_Computational_Complexity.pdf).
-#### Varying numbers of decision points for T-learner (10K; SCOPE & SEP: XGBoost)
-![Varying numbers of decision points for T-learner (10K; SCOPE & SEP: XGBoost)](src/utils/results_tools/figures/numbers_of_decision_points_T_xgb.png)
-#### Varying numbers of decision points for Random Forest (10K; SCOPE & SEP: S-learner)
-![Varying numbers of decision points for Random Forest (10K; SCOPE & SEP: S-learner)](src/utils/results_tools/figures/numbers_of_decision_points_S_rf.png)
-These additional experiments on SimBPIC17 confirm the paper's finding that SCOPE performs better regardless of the learner or base model used, mirroring the results previously shown on SimBank.
 
 # 2. Code
 The structure of the code is as follows:
