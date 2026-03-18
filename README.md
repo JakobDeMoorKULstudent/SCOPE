@@ -12,21 +12,28 @@ Below are the main results of the paper, and additional results. For each experi
 ## Main
 ### SimBank
 #### Varying training size (SCOPE & SEP: S-learner, XGBoost)
-![Varying training size (SCOPE & SEP: S-learner, XGBoost)](src/utils/results_tools/figures/training_sizes-1.png)
+![Varying training size (SCOPE & SEP: S-learner, XGBoost)](src/utils/results_tools/figures/training_sizes.png)
 #### Varying learner types (10K; SCOPE & SEP: XGBoost)
-![Varying learner types (10K; SCOPE & SEP: XGBoost)](src/utils/results_tools/figures/learners-1.png)
+![Varying learner types (10K; SCOPE & SEP: XGBoost)](src/utils/results_tools/figures/learners.png)
 #### Varying base model types (10K; SCOPE & SEP: S-learner)
-![Varying base model types (10K; SCOPE & SEP: S-learner)](src/utils/results_tools/figures/base_models-1.png)
+![Varying base model types (10K; SCOPE & SEP: S-learner)](src/utils/results_tools/figures/base_models.png)
 ### SimBPIC17
 #### Varying numbers of decision points (10K; SCOPE & SEP: S-learner, XGBoost)
-![Varying numbers of decision points (10K; SCOPE & SEP: S-learner, XGBoost)](src/utils/results_tools/figures/numbers_of_decision_points-1.png)
+![Varying numbers of decision points (10K; SCOPE & SEP: S-learner, XGBoost)](src/utils/results_tools/figures/numbers_of_decision_points.png)
 
 ## Additional experiment SimBPIC17
-### SimBPIC17
 #### Varying numbers of decision points for T-learner (10K; SCOPE & SEP: XGBoost)
-![Varying numbers of decision points for T-learner (10K; SCOPE & SEP: XGBoost)](src/utils/results_tools/figures/numbers_of_decision_points_T_xgb-1.png)
+![Varying numbers of decision points for T-learner (10K; SCOPE & SEP: XGBoost)](src/utils/results_tools/figures/numbers_of_decision_points_T_xgb.png)
 #### Varying numbers of decision points for Random Forest (10K; SCOPE & SEP: S-learner)
-![Varying numbers of decision points for Random Forest (10K; SCOPE & SEP: S-learner)](src/utils/results_tools/figures/numbers_of_decision_points_S_rf-1.png)
+![Varying numbers of decision points for Random Forest (10K; SCOPE & SEP: S-learner)](src/utils/results_tools/figures/numbers_of_decision_points_S_rf.png)
+These additional experiments on SimBPIC17 confirm the paper's finding that SCOPE performs better regardless of the learner or base model used, mirroring the results previously shown on SimBank.
+
+## Computational complexity
+We discuss the theoretical computational complexity and the practical runtimes of each method in our [Computational Complexity Report (PDF)](src/utils/results_tools/docs/SCOPE_Computational_Complexity.pdf).
+#### Varying numbers of decision points for T-learner (10K; SCOPE & SEP: XGBoost)
+![Varying numbers of decision points for T-learner (10K; SCOPE & SEP: XGBoost)](src/utils/results_tools/figures/numbers_of_decision_points_T_xgb.png)
+#### Varying numbers of decision points for Random Forest (10K; SCOPE & SEP: S-learner)
+![Varying numbers of decision points for Random Forest (10K; SCOPE & SEP: S-learner)](src/utils/results_tools/figures/numbers_of_decision_points_S_rf.png)
 These additional experiments on SimBPIC17 confirm the paper's finding that SCOPE performs better regardless of the learner or base model used, mirroring the results previously shown on SimBank.
 
 # 2. Code
