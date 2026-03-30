@@ -72,9 +72,8 @@ The ```requirements.txt``` file provides the necessary packages for SCOPE and al
 All code was written for ```python 3.11.5```.
 
 ## Running the experiments of the paper
-Download the SimBank and SimBPIC17 data for the experiments from [Google Drive](https://drive.google.com/file/d/1EsAYVnmK-MhAZ1Tljp08xV_iTyjW1CyZ/view?usp=sharing). 
-
-Put the data in the ```data/``` folder. 
+<!-- Download the SimBank and SimBPIC17 data for the experiments from [Google Drive](https://drive.google.com/file/d/1EsAYVnmK-MhAZ1Tljp08xV_iTyjW1CyZ/view?usp=sharing).  -->
+<!-- Put the data in the ```data/``` folder.  -->
 
 Now, the results from the paper can be reproduced by setting the ```path``` variable in the config/config.py file to your directory and running the appropriate script. For example:
 
@@ -86,7 +85,7 @@ python scripts/main.py \
         --train_size 10000 \
 ```
 
-Download the results of the experiments from [Google Drive](https://drive.google.com/file/d/1y0FFAqPiS4grkk2tHNhvKLvvgorneAn-/view?usp=sharing). 
+<!-- Download the results of the experiments from [Google Drive](https://drive.google.com/file/d/1y0FFAqPiS4grkk2tHNhvKLvvgorneAn-/view?usp=sharing).  -->
 
 # 3. SimBPIC17
 
