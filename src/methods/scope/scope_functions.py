@@ -143,13 +143,27 @@ class SCOPEFunctions():
                     # Used for example in g-computation
                     target_outcomes = q_obs
                 elif self.model_params["value_function_method"] == "R":
+                    # Grab any ps modelling if necessary
                     prev_ps = None
                     if self.model_params_list_of_dicts[self.stage+1]["ps"] != "nope":
                         prev_ps_model_functions = get_model_functions(model_params=self.model_params_list_of_dicts[self.stage+1]["ps"], model_to_load=self.models_list_of_dicts[self.stage+1]["ps"])
 
                         prev_ps = self.get_propensity_scores(ps_model_functions=prev_ps_model_functions, data=prev_data, dataset_ps=prev_data_ps)
 
-                    prev_opt_actions, prev_opt_estimates, prev_contrast, _ = self.calc_opt_actions_and_constrast(q_values_all_actions=prev_q_values_all_actions, propensity_scores=prev_ps, data=prev_data, target_outcomes=prev_data["Y"])
+                    # Grab the optimal action given by previous effect model if causal learners were used with pseudo-outcomes
+                    if "RA" in self.learner_method or "AIPW" in self.learner_method:
+                        prev_effect_model_params = self.model_params_list_of_dicts[self.stage+1]["effect"]
+                        prev_effect_model_functions = get_model_functions(
+                            model_params=prev_effect_model_params,
+                            model_to_load=self.models_list_of_dicts[self.stage+1]["effect"],
+                        )
+
+                        prev_effect_values_all_actions = self.get_effect_values(model_functions=prev_effect_model_functions, data=prev_data, target_outcomes=prev_data["Y"])
+                        prev_opt_actions = np.argmax(prev_effect_values_all_actions, axis=0)
+
+                    else:
+                        # Just use the q-values to get optimal actions from the previous stage, since we are not using causal learners with pseudo-outcomes
+                        prev_opt_actions, prev_opt_estimates, prev_contrast, _ = self.calc_opt_actions_and_constrast(q_values_all_actions=prev_q_values_all_actions, propensity_scores=prev_ps, data=prev_data, target_outcomes=prev_data["Y"])
 
                     prev_q_values_opt_actions = self.get_correct_values(values_all_actions=prev_q_values_all_actions, actions=prev_opt_actions)
 
@@ -215,7 +229,7 @@ class SCOPEFunctions():
         contrast_function_values = opt_estimates.unsqueeze(0) - causal_estimates_tensor
 
         return opt_actions, opt_estimates, contrast_function_values, causal_estimates_tensor
-        
+
     # Helper methods for SCOPE
     def get_q_values(self, model_functions, data, target_outcomes=None, target="outcome"):
         """
@@ -235,6 +249,19 @@ class SCOPEFunctions():
         print(f"MAE: {mae.item()}")
 
         return q_values_all_actions
+    
+    def get_effect_values(self, model_functions, data, target_outcomes=None):
+        """
+        Get the effect predictions for all possible actions in SCOPE.
+        """
+        effect_values_all_actions = model_functions.forward(x_case=data["X_case"],
+                                    x_event=data["X_event"],
+                                    t=data["T"],
+                                    prefix_len=data["prefix_len"],
+                                    y=data["Y"],
+                                    ret_counterfactuals=True)
+        
+        return effect_values_all_actions
         
     def get_propensity_scores(self, ps_model_functions, data, dataset_ps=None):
         """
@@ -332,6 +359,9 @@ class SCOPEFunctions():
                 return X, T, Y
             
             def subcalc(t, T, Y, mu_hats):
+                # NEW: baseline action is first one, so pseudo-outcome is standard 0 for all
+                if t == 0:
+                    return torch.zeros_like(Y) if isinstance(Y, torch.Tensor) else np.zeros_like(Y)
                 mu_hat_0 = mu_hats[0]
                 mu_hat_t = mu_hats[t]
                 ind_t = get_ind(T, t)

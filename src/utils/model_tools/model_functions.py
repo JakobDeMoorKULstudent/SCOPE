@@ -136,8 +136,9 @@ class MLCausalRegressor():
         self.single_model = True if ("S" in model_params["method"] and self.model_params["target"] == "outcome") else False
         self.target = model_params["target"]
         self.n_classes = model_params["dim_t"] if model_params["dim_t"] > 1 else 2
+        self.actions_to_model = list(range(1, self.n_classes)) if self.target == "effect" else list(range(self.n_classes))
         model = get_ml_model(model_params=model_params, n_classes=self.n_classes, target_type="reg")
-        self.model = [deepcopy(model) for _ in range(self.n_classes)] if not self.single_model else deepcopy(model)
+        self.model = [deepcopy(model) for _ in self.actions_to_model] if not self.single_model else deepcopy(model)
 
     def get_ind(self, T, t):
         if self.n_classes == 2:
@@ -236,7 +237,7 @@ class MLCausalRegressor():
                 Y_train, Y_test = Y[train_idx], Y[test_idx]
 
                 fold_model = get_ml_model(model_params=self.model_params, n_classes=self.n_classes, target_type="reg")
-                model = [deepcopy(fold_model) for _ in range(self.n_classes)] if not self.single_model else deepcopy(fold_model)
+                model = [deepcopy(fold_model) for _ in self.actions_to_model] if not self.single_model else deepcopy(fold_model)
 
                 if self.single_model:
                     feat = np.concatenate((X_train, T_train), axis=1) if self.target == "outcome" else X_train
@@ -244,17 +245,17 @@ class MLCausalRegressor():
                     loss = self.score(model=model, X=X_test, T=T_test, Y=Y_test)
                 else:
                     loss = 0
-                    for t in range(self.n_classes):
-                        ind_t_train = self.get_ind(T_train, t)
-                        Y_to_fit_to = Y_train[ind_t_train == 1] if self.target == "outcome" else Y_train[:, t]
+                    for model_idx, action_idx in enumerate(self.actions_to_model):
+                        ind_t_train = self.get_ind(T_train, action_idx)
+                        Y_to_fit_to = Y_train[ind_t_train == 1] if self.target == "outcome" else Y_train[:, action_idx]
                         X_to_fit_to = X_train[ind_t_train == 1] if self.target == "outcome" else X_train
-                        model[t].fit(X_to_fit_to, Y_to_fit_to)
+                        model[model_idx].fit(X_to_fit_to, Y_to_fit_to)
                         
-                        ind_t_test = self.get_ind(T_test, t)
-                        Y_test_to_fit_to = Y_test[ind_t_test == 1] if self.target == "outcome" else Y_test[:, t]
+                        ind_t_test = self.get_ind(T_test, action_idx)
+                        Y_test_to_fit_to = Y_test[ind_t_test == 1] if self.target == "outcome" else Y_test[:, action_idx]
                         X_test_to_fit_to = X_test[ind_t_test == 1] if self.target == "outcome" else X_test
-                        loss += self.score(model=model[t], X=X_test_to_fit_to, T=T_test[ind_t_test == 1], Y=Y_test_to_fit_to)
-                    loss = loss / self.n_classes
+                        loss += self.score(model=model[model_idx], X=X_test_to_fit_to, T=T_test[ind_t_test == 1], Y=Y_test_to_fit_to)
+                    loss = loss / len(self.actions_to_model)
 
                 losses.append(loss)
 
@@ -267,16 +268,18 @@ class MLCausalRegressor():
                 loss = self.score(model=self.model, X=X, T=T, Y=Y)
             else:
                 loss = 0
-                for t in range(self.n_classes):
-                    ind_t = self.get_ind(T, t)
-                    Y_to_fit_to = Y[ind_t == 1] if self.target == "outcome" else Y[:, t]
+                for model_idx, action_idx in enumerate(self.actions_to_model):
+                    ind_t = self.get_ind(T, action_idx)
+                    Y_to_fit_to = Y[ind_t == 1] if self.target == "outcome" else Y[:, action_idx]
                     X_to_fit_to = X[ind_t == 1] if self.target == "outcome" else X
-                    self.model[t].fit(X_to_fit_to, Y_to_fit_to)
-                    loss += self.score(model=self.model[t], X=X_to_fit_to, T=T[ind_t == 1], Y=Y_to_fit_to)
-                loss = loss / self.n_classes
+                    self.model[model_idx].fit(X_to_fit_to, Y_to_fit_to)
+                    loss += self.score(model=self.model[model_idx], X=X_to_fit_to, T=T[ind_t == 1], Y=Y_to_fit_to)
+                loss = loss / len(self.actions_to_model)
             return loss
 
     def forward(self, x_case, x_event, t, prefix_len, y, ret_counterfactuals=False):
+        # NOTE: if model has target "effect", the first pred (for action 0) will always be 0 (since it represents the baseline)
+
         X, _, _ = self.prep(x_case, t, y)
 
         runtime_forward_start = time.perf_counter()
@@ -291,8 +294,9 @@ class MLCausalRegressor():
                     T_artificial[:] = treatment
                 feat = np.concatenate((X, T_artificial), axis=1) if self.target == "outcome" else X
                 preds[treatment, :] = self.model.predict(feat)
-            else:
-                preds[treatment, :] = self.model[treatment].predict(X)
+        if not self.single_model:
+            for model_idx, action_idx in enumerate(self.actions_to_model):
+                preds[action_idx, :] = self.model[model_idx].predict(X)
         runtime_forward_seconds = time.perf_counter() - runtime_forward_start
         # print('Method:', self.model_params["method"])
         # print(f"Forward pass runtime: {runtime_forward_seconds:.2f} seconds")

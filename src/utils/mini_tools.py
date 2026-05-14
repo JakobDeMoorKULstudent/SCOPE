@@ -107,12 +107,22 @@ def get_model_functions(model_params, model_to_load=None):
                 # T-learner: multiple models
                 assert isinstance(model_functions.model, list), \
                     "Expected model_functions.model to be a list for T-learner setup."
-                for m, state in zip(model_functions.model, model_to_load):
+                states_to_load = model_to_load
+                if model_params["target"] == "effect" and len(model_to_load) == len(model_functions.model) + 1:
+                    states_to_load = model_to_load[1:]
+                for m, state in zip(model_functions.model, states_to_load):
                     m.load_state_dict(state)
             else:
                 # S-learner: single model
                 model_functions.model.load_state_dict(model_to_load)
         else:
+            if (
+                model_params["target"] == "effect"
+                and isinstance(model_to_load, list)
+                and isinstance(model_functions.model, list)
+                and len(model_to_load) == len(model_functions.model) + 1
+            ):
+                model_to_load = model_to_load[1:]
             model_functions.model = model_to_load
     
     return model_functions

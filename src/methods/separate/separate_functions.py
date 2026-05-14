@@ -216,6 +216,9 @@ class SeparateFunctions():
                 return X, T, Y
             
             def subcalc(t, T, Y, mu_hats):
+                # NEW: baseline action is first one, so pseudo-outcome is standard 0
+                if t == 0:
+                    return torch.zeros_like(Y) if isinstance(Y, torch.Tensor) else np.zeros_like(Y)
                 mu_hat_0 = mu_hats[0]
                 mu_hat_t = mu_hats[t]
                 ind_t = get_ind(T, t)
